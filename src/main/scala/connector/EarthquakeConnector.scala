@@ -18,13 +18,13 @@ class EarthquakeConnector(usgsConfig: USGSConfig, client: Resource[IO, Client[IO
 
   def getEarthquakes(
                       startTime: Option[LocalDate],
-                      endTime: Option[LocalDate],
-                      latitude: Option[Double],
-                      longitude: Option[Double],
-                      maxRadiusKm: Option[Double],
-                      minMagnitude: Option[Double],
-                      limit: Option[Int],
-                      offset: Option[Int]
+                      endTime: Option[LocalDate] = None,
+                      latitude: Option[Double] = None,
+                      longitude: Option[Double] = None,
+                      maxRadiusKm: Option[Double] = None,
+                      minMagnitude: Option[Double] = None,
+                      limit: Option[Int] = None,
+                      offset: Option[Int] = None
                     ): IO[GeoJsonResponse] = {
     val uri = Uri
       .unsafeFromString(usgsConfig.apiUrl)

@@ -11,63 +11,51 @@ import java.time.{Instant, LocalDate, ZoneId}
 
 class EarthquakeService(connector: EarthquakeConnector) {
 
+  private val DEFAULT_DAYS_AGO = 30
+  private val DEFAULT_EARTHQUAKES_COUNT = 100
+
+
   def findClosestEarthquake(longitude: Double, latitude: Double, minMag: Option[Double], days: Option[Int]): IO[Option[Earthquake]] = {
-    val daysAgo = days.getOrElse(30)
+    val daysAgo = days.getOrElse(DEFAULT_DAYS_AGO)
     val startTime = LocalDate.now().minusDays(daysAgo)
     val minMagnitude = minMag.getOrElse(0.0)
     val userCoordinates = Coordinates(latitude, longitude)
     for {
       response <- connector.getEarthquakes(
         startTime = Option(startTime),
-        endTime = None,
         latitude = Option(latitude),
         longitude = Option(longitude),
-        maxRadiusKm = None,
-        minMagnitude = Option(minMagnitude),
-        limit = None,
-        offset = None
+        minMagnitude = Option(minMagnitude)
       )
-      earthquakes = GeoJsonResponseMapper.map(response)
-      closestEarthquake = earthquakes
-        .map(eq => (eq, calculateDistance(userCoordinates, eq.coordinates)))
-        .minByOption { case (_, distance) => distance }
-        .map(_._1)
+      earthquakes = GeoJsonResponseTransformer.transform(response)
+      closestEarthquake = findClosestEarthquake(userCoordinates, earthquakes)
     } yield closestEarthquake
   }
 
   def findStrongestEarthquakes(days: Option[Int], page: Int, pageSize: Int): IO[List[Earthquake]] = {
-    val daysAgo = days.getOrElse(30)
+    val daysAgo = days.getOrElse(DEFAULT_DAYS_AGO)
     val startTime = LocalDate.now().minusDays(daysAgo)
     for {
       response <- connector.getEarthquakes(
         startTime = Option(startTime),
-        endTime = None,
-        latitude = None,
-        longitude = None,
-        maxRadiusKm = None,
-        minMagnitude = None,
         limit = Option(pageSize),
         offset = Option(page * pageSize + 1)
       )
-    } yield GeoJsonResponseMapper.map(response)
+    } yield GeoJsonResponseTransformer.transform(response)
   }
 
-  def findStrongestEarthquakesAtDate(date: LocalDate, count: Option[Int], page: Int, pageSize: Int): IO[List[Earthquake]] =
-    (ChronoUnit.DAYS.between(date, LocalDate.now()) < 30, count.getOrElse(100) <= 100) match {
+  def findStrongestEarthquakesAtDate(date: LocalDate, count: Option[Int], page: Int, pageSize: Int): IO[List[Earthquake]] = {
+    (ChronoUnit.DAYS.between(date, LocalDate.now()) < DEFAULT_DAYS_AGO, count.getOrElse(DEFAULT_EARTHQUAKES_COUNT) <= DEFAULT_EARTHQUAKES_COUNT) match {
       case (true, true) =>
-        val elemCount = count.getOrElse(100)
+        val elemCount = count.getOrElse(DEFAULT_EARTHQUAKES_COUNT)
         for {
           response <- connector.getEarthquakes(
             startTime = Option(date),
             endTime = Option(date.plusDays(1)),
-            latitude = None,
-            longitude = None,
-            maxRadiusKm = None,
-            minMagnitude = None,
             limit = Option(Math.min(pageSize, elemCount)),
             offset = Option(page * pageSize + 1)
           )
-        } yield GeoJsonResponseMapper.map(response)
+        } yield GeoJsonResponseTransformer.transform(response)
 
       case (false, _) =>
         IO.raiseError(new IllegalArgumentException("The date must be within the last 30 days"))
@@ -75,6 +63,14 @@ class EarthquakeService(connector: EarthquakeConnector) {
       case (_, false) =>
         IO.raiseError(new IllegalArgumentException("Count parameter cannot be more than 100"))
     }
+  }
+
+  private def findClosestEarthquake(userCoordinates: Coordinates, earthquakes: List[Earthquake]): Option[Earthquake] = {
+    earthquakes
+      .map(eq => (eq, calculateDistance(userCoordinates, eq.coordinates)))
+      .minByOption { case (_, distance) => distance }
+      .map(_._1)
+  }
 
   private def calculateDistance(c1: Coordinates, c2: Coordinates): Double = {
     val earthRadiusKm = 6371
@@ -91,11 +87,12 @@ class EarthquakeService(connector: EarthquakeConnector) {
     degrees * (Math.PI / 180)
 }
 
-object GeoJsonResponseMapper {
-  def map(response: GeoJsonResponse): List[Earthquake] =
-    response.features.map(map)
+object GeoJsonResponseTransformer {
+  def transform(response: GeoJsonResponse): List[Earthquake] =
+    response.features
+      .map(transform)
 
-  def map(feature: Feature): Earthquake =
+  def transform(feature: Feature): Earthquake =
     Earthquake(
       magnitude = feature.properties.mag,
       date = Instant.ofEpochMilli(feature.properties.time).atZone(ZoneId.of("UTC")).toLocalDate,
