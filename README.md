@@ -18,19 +18,19 @@ Run `sbt run` to start the service.
         - days: optional, during the last N days. If not provided, defaults to last 30 days.
 
 2. **GET /earthquake/strongest**
-    - Find the strongest earthquakes during the last X days.
-    - Query Parameters:
-        - days: optional, during the last X days. If not provided, defaults to the last 30 days.
-        - page: required, page number for pagination.
-        - pageSize: required, number of results per page.
+   - Find the strongest earthquakes during the last X days.
+   - Query Parameters:
+      - days: optional, during the last X days. If not provided, defaults to the last 30 days.
+      - page: required, page number for pagination.
+      - pageSize: required, number of results per page.
 
-3. **GET /earthquake/strongest/date**
-    - Find the top N strongest earthquakes for a given day.
-    - Query Parameters:
-        - date: required, day in format `2013-12-30`.
-        - count: optional, number of strongest earthquakes to return. Defaults to 100.
-        - page: required, page number for pagination.
-        - pageSize: required, number of results per page.
+3. **GET /earthquake/strongest/top**
+   - Find the top N strongest earthquakes for a given day.
+   - Query Parameters:
+      - date: required, day in format `2013-12-30`.
+      - count: optional, number of strongest earthquakes to return. Defaults to 100.
+      - page: required, page number for pagination.
+      - pageSize: required, number of results per page.
 
 Note: Returns HTTP error if the date is not within the last 30 days or count parameter is more than 100.
 

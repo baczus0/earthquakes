@@ -75,7 +75,7 @@ class EarthquakeRoutesTest extends AnyFunSuite with MockFactory {
     }
   }
 
-  test("GET /earthquake/strongest/date returns 200 with list of earthquakes") {
+  test("GET /earthquake/strongest/top returns 200 with list of earthquakes") {
 
     val earthquakes = List(
       Earthquake(5.0, LocalDate.now(), Coordinates(50.5, 30.5)),
@@ -85,7 +85,7 @@ class EarthquakeRoutesTest extends AnyFunSuite with MockFactory {
 
     val request = Request[IO](
       Method.GET,
-      uri"/earthquake/strongest/date"
+      uri"/earthquake/strongest/top"
         .withQueryParam("date", "2023-01-01")
         .withQueryParam("page", "0")
         .withQueryParam("pageSize", "10")
@@ -102,11 +102,11 @@ class EarthquakeRoutesTest extends AnyFunSuite with MockFactory {
     }
   }
 
-  test("GET /earthquake/strongest/date returns 400 when service return IllegalArgumentException") {
+  test("GET /earthquake/strongest/top returns 400 when service return IllegalArgumentException") {
 
     val request = Request[IO](
       Method.GET,
-      uri"/earthquake/strongest/date"
+      uri"/earthquake/strongest/top"
         .withQueryParam("date", "2023-01-01")
         .withQueryParam("count", "101")
         .withQueryParam("page", "0")
