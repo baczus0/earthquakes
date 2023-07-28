@@ -1,10 +1,12 @@
 package earthquakes
 package domain
 
-import java.time.Instant
+import java.time.LocalDate
 
 object Models {
-  case class Earthquake(mag: Double, time: Long, latitude: Double, longitude: Double)
+  case class Earthquake(magnitude: Double, date: LocalDate, coordinates: Coordinates)
+
+  case class Coordinates(latitude: Double, longitude: Double)
 
   case class GeoJsonResponse(features: List[Feature])
 
